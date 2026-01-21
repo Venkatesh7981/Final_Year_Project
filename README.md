@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # gesture-controlled-dobot-arm
 A ROS 2-based gesture control system for the Dobot Magician robotic arm using MediaPipe and OpenCV. Real-time joint control via hand tracking and finger gesture recognition.
 
@@ -30,3 +31,6 @@ https://youtu.be/NFzSP2X7WyM
 =======
 # Final_Year_Project
 >>>>>>> d4208bcad9025fc567104a4cfce0da91f7fc1327
+=======
+
+>>>>>>> b52cf20586ed9900c63bf14f708e410891c16d14
