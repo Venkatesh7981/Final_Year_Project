@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/build/moveit_msgs/rosidl_generator_cpp/moveit_msgs/srv/get_robot_state_from_warehouse.hpp

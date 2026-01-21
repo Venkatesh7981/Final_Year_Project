@@ -1,4 +1,0 @@
-source;share/object_recognition_msgs/environment/ament_prefix_path.sh
-source;share/object_recognition_msgs/environment/library_path.sh
-source;share/object_recognition_msgs/environment/path.sh
-source;share/object_recognition_msgs/environment/pythonpath.sh

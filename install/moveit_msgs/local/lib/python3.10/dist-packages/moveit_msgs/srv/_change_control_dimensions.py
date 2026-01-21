@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/build/moveit_msgs/rosidl_generator_py/moveit_msgs/srv/_change_control_dimensions.py

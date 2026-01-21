@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/build/moveit_msgs/rosidl_generator_c/moveit_msgs/msg/detail/planner_interface_description__struct.h

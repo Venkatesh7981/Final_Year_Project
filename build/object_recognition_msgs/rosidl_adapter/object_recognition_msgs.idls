@@ -1,8 +1,0 @@
-/home/suwi/ros2_4dof_arm/build/object_recognition_msgs/rosidl_adapter/object_recognition_msgs:action/ObjectRecognition.idl
-/home/suwi/ros2_4dof_arm/build/object_recognition_msgs/rosidl_adapter/object_recognition_msgs:srv/GetObjectInformation.idl
-/home/suwi/ros2_4dof_arm/build/object_recognition_msgs/rosidl_adapter/object_recognition_msgs:msg/ObjectType.idl
-/home/suwi/ros2_4dof_arm/build/object_recognition_msgs/rosidl_adapter/object_recognition_msgs:msg/ObjectInformation.idl
-/home/suwi/ros2_4dof_arm/build/object_recognition_msgs/rosidl_adapter/object_recognition_msgs:msg/RecognizedObject.idl
-/home/suwi/ros2_4dof_arm/build/object_recognition_msgs/rosidl_adapter/object_recognition_msgs:msg/RecognizedObjectArray.idl
-/home/suwi/ros2_4dof_arm/build/object_recognition_msgs/rosidl_adapter/object_recognition_msgs:msg/Table.idl
-/home/suwi/ros2_4dof_arm/build/object_recognition_msgs/rosidl_adapter/object_recognition_msgs:msg/TableArray.idl

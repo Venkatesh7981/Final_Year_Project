@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/build/moveit_msgs/rosidl_generator_c/moveit_msgs/srv/detail/get_motion_sequence__type_support.h

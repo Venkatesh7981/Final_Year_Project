@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/src/moveit_msgs/msg/LinkPadding.msg

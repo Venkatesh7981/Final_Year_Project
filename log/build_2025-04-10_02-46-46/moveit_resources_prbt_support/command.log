@@ -1,1 +1,0 @@
-Invoking command in '/home/suwi/ros2_4dof_arm/build/moveit_resources_prbt_support': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/suwi/ros2_ws_prac/install/pub_sub /usr/bin/cmake --build /home/suwi/ros2_4dof_arm/build/moveit_resources_prbt_support -- -j8 -l8

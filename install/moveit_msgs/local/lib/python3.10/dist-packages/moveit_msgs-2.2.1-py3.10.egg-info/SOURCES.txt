@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/build/moveit_msgs/ament_cmake_python/moveit_msgs/moveit_msgs.egg-info/SOURCES.txt

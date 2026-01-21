@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/build/moveit_msgs/rosidl_cmake/srv/GetRobotStateFromWarehouse_Request.msg

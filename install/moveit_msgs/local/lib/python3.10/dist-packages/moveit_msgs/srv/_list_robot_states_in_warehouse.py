@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/build/moveit_msgs/rosidl_generator_py/moveit_msgs/srv/_list_robot_states_in_warehouse.py

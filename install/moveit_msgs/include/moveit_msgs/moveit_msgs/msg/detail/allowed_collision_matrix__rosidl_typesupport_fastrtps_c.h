@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/build/moveit_msgs/rosidl_typesupport_fastrtps_c/moveit_msgs/msg/detail/allowed_collision_matrix__rosidl_typesupport_fastrtps_c.h

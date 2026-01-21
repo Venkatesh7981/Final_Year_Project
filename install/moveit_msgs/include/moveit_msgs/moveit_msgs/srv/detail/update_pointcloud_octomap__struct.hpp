@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/build/moveit_msgs/rosidl_generator_cpp/moveit_msgs/srv/detail/update_pointcloud_octomap__struct.hpp

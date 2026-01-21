@@ -1,1 +1,0 @@
-Invoking command in '/home/suwi/ros2_4dof_arm/build/moveit_resources_prbt_support': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/suwi/ros2_ws_prac/install/pub_sub /usr/bin/cmake /home/suwi/ros2_4dof_arm/src/moveit2/moveit_planners/test_configs/prbt_support -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/suwi/ros2_4dof_arm/install/moveit_resources_prbt_support

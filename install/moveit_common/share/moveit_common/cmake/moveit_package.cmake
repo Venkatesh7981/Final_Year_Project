@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/src/moveit2/moveit_common/cmake/moveit_package.cmake

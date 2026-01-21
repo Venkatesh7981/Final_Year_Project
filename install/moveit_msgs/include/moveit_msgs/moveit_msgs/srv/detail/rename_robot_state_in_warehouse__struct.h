@@ -1,1 +1,0 @@
-/home/suwi/ros2_4dof_arm/build/moveit_msgs/rosidl_generator_c/moveit_msgs/srv/detail/rename_robot_state_in_warehouse__struct.h
