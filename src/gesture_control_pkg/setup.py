@@ -23,8 +23,6 @@ setup(
             'hand_tracker_publisher = gesture_control_pkg.hand_tracker_publisher:main',
             'gesture_joint_publisher = gesture_control_pkg.gesture_joint_publisher:main',
             'manual_angle_publisher = gesture_control_pkg.manual_angle_publisher:main',
-            'angle_to_joint_state_publisher = gesture_control_pkg.angle_to_joint_state_publisher:main',
-            'gesture_angle_publisher = gesture_control_pkg.gesture_angle_publisher:main'
-        ],
+        'angle_to_joint_state_publisher = gesture_control_pkg.angle_to_joint_state_publisher:main',        ],
     },
 )

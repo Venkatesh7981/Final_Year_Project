@@ -8,97 +8,123 @@ import mediapipe as mp
 import numpy as np
 import math
 
-# Drawing utility
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
+
 
 class ArmAnglePublisher(Node):
     def __init__(self):
         super().__init__('gesture_angle_publisher')
-        self.publisher_ = self.create_publisher(Float32MultiArray, '/detected_angles', 10)
-        self.pose = mp_pose.Pose()
-        self.cap = cv2.VideoCapture(0)
+        self.publisher_ = self.create_publisher(
+            Float32MultiArray, '/detected_angles', 10
+        )
 
+        self.pose = mp_pose.Pose(
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.7
+        )
+
+        self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
-            self.get_logger().error("Webcam not accessible. Exiting.")
+            self.get_logger().error("Webcam not accessible.")
             exit(1)
 
-        self.timer = self.create_timer(0.1, self.detect_and_publish)  # 10Hz
-        self.get_logger().info("Gesture Angle Publisher Initialized")
+        self.last_rear = 0.0
+        self.last_forearm = 0.0
+
+        self.timer = self.create_timer(0.1, self.detect_and_publish)
+        self.get_logger().info("Pose-Based Gesture Angle Publisher Initialized")
 
     def detect_and_publish(self):
         ret, frame = self.cap.read()
         if not ret:
-            self.get_logger().warn("Could not read frame from camera.")
             return
 
-        # Flip for mirror view
         frame = cv2.flip(frame, 1)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = self.pose.process(rgb)
 
-        # Convert to RGB
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = self.pose.process(rgb_frame)
+        mode = "IDLE"
 
         if results.pose_landmarks:
-            landmarks = results.pose_landmarks.landmark
+            lm = results.pose_landmarks.landmark
+            h, w, _ = frame.shape
 
-            shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x * frame.shape[1],
-                        landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y * frame.shape[0]]
-            elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x * frame.shape[1],
-                     landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y * frame.shape[0]]
-            wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x * frame.shape[1],
-                     landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y * frame.shape[0]]
+            shoulder = np.array([
+                lm[mp_pose.PoseLandmark.LEFT_SHOULDER].x * w,
+                lm[mp_pose.PoseLandmark.LEFT_SHOULDER].y * h
+            ])
+            elbow = np.array([
+                lm[mp_pose.PoseLandmark.LEFT_ELBOW].x * w,
+                lm[mp_pose.PoseLandmark.LEFT_ELBOW].y * h
+            ])
+            wrist = np.array([
+                lm[mp_pose.PoseLandmark.LEFT_WRIST].x * w,
+                lm[mp_pose.PoseLandmark.LEFT_WRIST].y * h
+            ])
 
-            rear_arm_angle = calculate_angle(shoulder, elbow, wrist) - 90
-            rear_arm_angle = clamp(rear_arm_angle, -5, 80)
+            elbow_angle = calculate_angle(shoulder, elbow, wrist)
 
-            forearm_angle = calculate_angle(elbow, wrist, shoulder) - 90
-            forearm_angle = clamp(forearm_angle, -10, 85)
+            # ---------- GESTURE LOGIC ----------
+            if wrist[1] > shoulder[1]:
+                mode = "STOP"
 
-            # Create and publish message
-            msg = Float32MultiArray()
-            msg.data = [math.radians(rear_arm_angle), math.radians(forearm_angle)]
-            self.publisher_.publish(msg)
+            elif elbow_angle > 160:
+                mode = "HOME"
+                self.last_rear = 0.0
+                self.last_forearm = 0.0
 
-            # Log info
-            self.get_logger().info(f"Published Angles: Rear = {rear_arm_angle:.2f}°, Forearm = {forearm_angle:.2f}°")
+            else:
+                mode = "ACTIVE"
+                rear = elbow_angle - 90
+                forearm = calculate_angle(elbow, wrist, shoulder) - 90
 
-            # Draw pose skeleton
+                self.last_rear = clamp(rear, -5, 80)
+                self.last_forearm = clamp(forearm, -10, 85)
+
+            # Draw skeleton
             mp_drawing.draw_landmarks(
                 frame,
                 results.pose_landmarks,
                 mp_pose.POSE_CONNECTIONS
             )
 
-            # Show text info
-            cv2.putText(frame, f"Rear: {rear_arm_angle:.1f}°", (20, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-            cv2.putText(frame, f"Forearm: {forearm_angle:.1f}°", (20, 60),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        # Publish angles (always safe)
+        msg = Float32MultiArray()
+        msg.data = [
+            math.radians(self.last_rear),
+            math.radians(self.last_forearm)
+        ]
+        self.publisher_.publish(msg)
 
-        # Show frame
-        cv2.imshow("Gesture Tracking", frame)
+        # UI
+        cv2.putText(frame, f"Mode: {mode}", (20, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+        cv2.putText(frame, f"Rear: {self.last_rear:.1f}°", (20, 65),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.putText(frame, f"Forearm: {self.last_forearm:.1f}°", (20, 95),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+
+        cv2.imshow("Pose Gesture Control", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            self.get_logger().info("Quitting...")
             rclpy.shutdown()
 
     def on_shutdown(self):
         self.cap.release()
         cv2.destroyAllWindows()
-        self.get_logger().info("Camera and windows released.")
+
 
 def calculate_angle(a, b, c):
-    a = np.array(a)
-    b = np.array(b)
-    c = np.array(c)
     ba = a - b
     bc = c - b
-    cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
-    angle = np.arccos(np.clip(cosine_angle, -1.0, 1.0))
+    cosine = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+    angle = np.arccos(np.clip(cosine, -1.0, 1.0))
     return np.degrees(angle)
 
-def clamp(value, min_value, max_value):
-    return max(min_value, min(max_value, value))
+
+def clamp(val, mn, mx):
+    return max(mn, min(mx, val))
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -110,6 +136,7 @@ def main(args=None):
     finally:
         node.on_shutdown()
         rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

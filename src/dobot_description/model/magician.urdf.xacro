@@ -1,179 +1,187 @@
-<?xml version="1.0"?>
+#!/usr/bin/env python3
 
-<root xmlns:xi="http://www.w3.org/2001/XInclude"
-   xmlns:xacro="http://ros.org/wiki/xacro">
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Float32MultiArray
+import cv2
+import mediapipe as mp
+from collections import deque
 
-    <xacro:arg name="DOF" default= "4" />
-    <xacro:property name="DOF_property" value="$(arg DOF)"/>
-
-    <xacro:arg name="tool" default= "gripper" />
-    <xacro:property name="tool_property" value="$(arg tool)"/>
-
-    <xacro:arg name="use_camera" default="false" />
-
-    <xacro:include filename="$(find dobot_description)/model/dobot_common.urdf.xacro" />
-
-    <xacro:property name="link_base_mesh" value="magicianBase" />
-    <xacro:property name="link_1_mesh" value="magicianLink1" />
-    <xacro:property name="link_2_mesh" value="magicianLink2" />
-    <xacro:property name="link_3_mesh" value="magicianLink3" />
-    <xacro:property name="link_4_mesh" value="magicianLink4_default" />
-    <xacro:property name="link_5_mesh" value="moving_gripper" />
- 
-    <xacro:property name="link_base_length" value="0.131305" />   
-    <xacro:property name="link_2_length" value="0.135" />
-    <xacro:property name="link_3_length" value="0.147" />    
-    <xacro:property name="link_4_length" value="${0.041+0.019}" />
-    <xacro:property name="end_effector_length" value="0.06" />
-
-    <xacro:property name="joint_base" value="joint_base" />
-    <xacro:property name="joint_base_type" value="fixed" />
-    <xacro:property name="joint_base_axis_xyz" value="0 0 0" />
-    <xacro:property name="joint_base_origin_xyz" value="0 0 ${link_base_length}" />
-    <xacro:property name="joint_base_origin_rpy" value="0 0 0" />
-
-	<!-- 	yaw    -->        
-    <xacro:property name="joint_1" value="joint_1" />
-    <xacro:property name="joint_1_type" value="revolute" />
-    <xacro:property name="joint_1_axis_xyz" value="0 0 1" />
-    <xacro:property name="joint_1_origin_xyz" value="0 0 0" />
-    <xacro:property name="joint_1_origin_rpy" value="0 0 0" />
-    <xacro:property name="joint_1_lower_limit" value="${-125/180*J_PI}" />
-    <xacro:property name="joint_1_upper_limit" value="${ 125/180*J_PI}" />
-
-	<!-- 	pitch     -->    
-    <xacro:property name="joint_2" value="joint_2" />
-    <xacro:property name="joint_2_type" value="revolute" />
-    <xacro:property name="joint_2_offset" value="${20/180*J_PI}" />
-    <xacro:property name="joint_2_axis_xyz" value="0 1 0" />
-    <xacro:property name="joint_2_origin_xyz" value="0 0 0.0" />
-    <xacro:property name="joint_2_origin_rpy" value="0 ${0/180*J_PI} 0" />
-    <xacro:property name="joint_2_lower_limit" value="${-5/180*J_PI}" />
-    <xacro:property name="joint_2_upper_limit" value="${90/180*J_PI}" />
-    <xacro:property name="joint_2_base_origin_xyz" value="0 0 0" />
-    <xacro:property name="joint_2_base_origin_rpy" value="0 ${-joint_2_offset} 0" />
-
-	<!-- 	pitch     -->    
-    <xacro:property name="joint_3" value="joint_3" />
-    <xacro:property name="joint_3_offset" value="${7/180*J_PI}" />
-    <xacro:property name="joint_3_type" value="revolute" />
-    <xacro:property name="joint_3_axis_xyz" value="0 1 0" />
-    <xacro:property name="joint_3_origin_xyz" value="0 0.0 ${link_2_length}" />
-    <xacro:property name="joint_3_origin_rpy" value="0 0 0" />
-    <xacro:property name="joint_3_lower_limit" value="${-15/180*J_PI}" />
-    <xacro:property name="joint_3_upper_limit" value="${70/180*J_PI}" />
-    <xacro:property name="joint_3_base_origin_xyz" value="${link_2_length*sin(joint_3_offset)} 0 ${-link_2_length+(link_2_length-link_2_length*cos(joint_3_offset))}" />
-    <xacro:property name="joint_3_base_origin_rpy" value="0 ${-joint_2_offset-joint_3_offset} 0" />
-
-	<!-- 	pitch     -->
-    <xacro:property name="joint_4" value="joint_4" />
-    <xacro:property name="joint_4_type" value="revolute" />
-    <xacro:property name="joint_4_axis_xyz" value="0 1 0" />
-    <xacro:property name="joint_4_origin_xyz" value="${link_3_length} 0 0" />
-    <xacro:property name="joint_4_origin_rpy" value="0 0 0" />
-    <xacro:property name="joint_4_lower_limit" value="${0*J_PI}" />
-    <xacro:property name="joint_4_upper_limit" value="${2*J_PI}" />
-    <xacro:property name="joint_4_base_origin_xyz" value="${-1*(link_2_length*sin(joint_2_offset)+link_3_length*cos(joint_2_offset+joint_3_offset))} 0 ${link_2_length-1*(link_2_length*cos(joint_2_offset)+link_3_length*sin(joint_2_offset+joint_3_offset))}" />
-    <xacro:property name="joint_4_base_origin_rpy" value="0 0 0" />
-
-	<!-- 	yaw     -->
-    <xacro:property name="joint_5" value="joint_5" />
-    <xacro:property name="joint_5_type" value="revolute" />
-    <xacro:property name="joint_5_axis_xyz" value="0 0 1" />
-    <xacro:property name="joint_5_origin_xyz" value="${link_4_length} 0 0" />
-    <xacro:property name="joint_5_origin_rpy" value="0 0 0" />
-    <xacro:property name="joint_5_lower_limit" value="${-150/180*J_PI}" />
-    <xacro:property name="joint_5_upper_limit" value="${150/180*J_PI}" />
-    <xacro:property name="joint_5_base_origin_xyz" value="${-1*(link_2_length*sin(joint_2_offset)+link_3_length*cos(joint_2_offset+joint_3_offset)+link_4_length) + 0.237117} 0 ${link_2_length-1*(link_2_length*cos(joint_2_offset)+link_3_length*sin(joint_2_offset+joint_3_offset)) + 0.0497517}" />
-    <xacro:property name="joint_5_base_origin_rpy" value="0 0 0" />
-    
-    <xacro:property name="joint_end_effector" value="end_effector_offset" />
-    <xacro:property name="joint_end_effector_type" value="fixed" />
-    <xacro:property name="joint_end_effector_axis_xyz" value="0 0 0" />
-    <xacro:property name="joint_end_effector_origin_xyz" value="0 0 ${-1*end_effector_length}" />
-    <xacro:property name="joint_end_effector_origin_rpy" value="0 0 0" />
+mp_hands = mp.solutions.hands
+mp_drawing = mp.solutions.drawing_utils
 
 
+class FingerAnglePublisher(Node):
+    def __init__(self):
+        super().__init__('gesture_angle_publisher')
 
-    <xacro:macro name="magician" params="base_parent prefix:=magician">
-    
-        <xacro:dobot_armlink link_name="${prefix}_base_link" link_mesh="${link_base_mesh}" base_origin_xyz="0 0 0" base_origin_rpy="0 0 0" />
-        <xacro:dobot_armjoint joint_name="${prefix}_joint_base" type="${joint_base_type}" parent="${base_parent}" child="${prefix}_base_link" joint_axis_xyz="${joint_base_axis_xyz}" joint_origin_xyz="${joint_base_origin_xyz}" joint_origin_rpy="${joint_base_origin_rpy}" joint_lower_limit="0" joint_upper_limit="0" fixed="true"/>
+        self.publisher_ = self.create_publisher(
+            Float32MultiArray, '/detected_angles', 10
+        )
 
-        <xacro:dobot_armlink link_name="${prefix}_link_1" link_mesh="${link_1_mesh}" base_origin_xyz="0 0 0" base_origin_rpy="0 0 0" />
-        <xacro:dobot_armjoint joint_name="${prefix}_joint_1" type="${joint_1_type}" parent="${prefix}_base_link" child="${prefix}_link_1" joint_axis_xyz="${joint_1_axis_xyz}" joint_origin_xyz="${joint_1_origin_xyz}" joint_origin_rpy="${joint_1_origin_rpy}" joint_lower_limit="${joint_1_lower_limit}" joint_upper_limit="${joint_1_upper_limit}"/>
+        # ---------------- CAMERA ----------------
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            self.get_logger().error("Webcam not accessible.")
+            exit(1)
 
-        <xacro:dobot_armlink link_name="${prefix}_link_2" link_mesh="${link_2_mesh}" base_origin_xyz="${joint_2_base_origin_xyz}" base_origin_rpy="${joint_2_base_origin_rpy}" />
-        <xacro:dobot_armjoint joint_name="${prefix}_joint_2" type="${joint_2_type}" parent="${prefix}_link_1" child="${prefix}_link_2" joint_axis_xyz="${joint_2_axis_xyz}" joint_origin_xyz="${joint_2_origin_xyz}" joint_origin_rpy="${joint_2_origin_rpy}" joint_lower_limit="${joint_2_lower_limit}" joint_upper_limit="${joint_2_upper_limit}"/>
+        self.hands = mp_hands.Hands(
+            max_num_hands=1,
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.7
+        )
 
-        <xacro:dobot_armlink link_name="${prefix}_link_3" link_mesh="${link_3_mesh}" base_origin_xyz="${joint_3_base_origin_xyz}" base_origin_rpy="${joint_3_base_origin_rpy}" />
-        <xacro:dobot_armjoint joint_name="${prefix}_joint_3" type="${joint_3_type}" parent="${prefix}_link_2" child="${prefix}_link_3" joint_axis_xyz="${joint_3_axis_xyz}" joint_origin_xyz="${joint_3_origin_xyz}" joint_origin_rpy="${joint_3_origin_rpy}" joint_lower_limit="${joint_3_lower_limit}" joint_upper_limit="${joint_3_upper_limit}"/>
+        # ---------------- SMOOTHING ----------------
+        self.hist_base = deque(maxlen=15)
+        self.hist_shoulder = deque(maxlen=15)
+        self.hist_elbow = deque(maxlen=15)
+        self.hist_wrist = deque(maxlen=15)
 
-        
-        <xacro:dobot_mimiclink link_name="${prefix}_link_virtual" base_origin_xyz="${joint_4_base_origin_xyz}" base_origin_rpy="${joint_4_base_origin_rpy}" />
-        <xacro:dobot_armjoint_mimic joint_name="${prefix}_joint_mimic_1" type="${joint_4_type}" parent="${prefix}_link_3" child="${prefix}_link_virtual" joint_axis_xyz="${joint_4_axis_xyz}" joint_origin_xyz="${joint_4_origin_xyz}" joint_origin_rpy="${joint_4_origin_rpy}" joint_lower_limit="${joint_4_lower_limit}" joint_upper_limit="${joint_4_upper_limit}" ref_joint="${prefix}_joint_2"/>
-        
-        <xacro:if value="${DOF_property == 3}">
+        # ---------------- JOINTS ----------------
+        self.base = 0.0
+        self.shoulder = 0.0
+        self.elbow = 0.0
+        self.wrist = 0.0
 
-        <xacro:dobot_armlink link_name="${prefix}_link_4" link_mesh="magicianLink4_default" base_origin_xyz="${joint_4_base_origin_xyz}" base_origin_rpy="${joint_4_base_origin_rpy}" />
-        <xacro:dobot_armjoint_mimic joint_name="${prefix}_joint_mimic_2" type="${joint_4_type}" parent="${prefix}_link_virtual" child="${prefix}_link_4" joint_axis_xyz="${joint_4_axis_xyz}" joint_origin_xyz="0 0 0" joint_origin_rpy="${joint_4_origin_rpy}" joint_lower_limit="${joint_4_lower_limit}" joint_upper_limit="${joint_4_upper_limit}" ref_joint="${prefix}_joint_3"/>
+        # ---------------- SPEED & ACCURACY CONTROL ----------------
+        self.SPEED_SCALE = 0.05      # VERY SLOW
+        self.DEAD_ZONE = 2.0         # degrees (ignore small motion)
 
-        <xacro:if value="${tool_property == 'pen'}">
-        <xacro:dobot_armlink link_name="${prefix}_link_pen" link_mesh="magician_pen"  base_origin_xyz="${joint_5_base_origin_xyz}" base_origin_rpy="${joint_5_base_origin_rpy}"  />
-        <xacro:dobot_fixed_joint joint_name="${prefix}_joint_pen" parent="${prefix}_link_4" child="${prefix}_link_pen"  joint_origin_xyz="0.0675 0.002 0.0165" joint_origin_rpy="${joint_5_origin_rpy}"/> 
-        </xacro:if>
+        # ---------------- SUCTION CUP ----------------
+        self.suction = 0.0
 
-        </xacro:if>
+        self.timer = self.create_timer(0.1, self.detect_and_publish)
+        self.get_logger().info("Gesture Controller (LOW accuracy, VERY slow)")
+
+    # =====================================================
+    def detect_and_publish(self):
+        ret, frame = self.cap.read()
+        if not ret:
+            return
+
+        frame = cv2.flip(frame, 1)
+        h, w, _ = frame.shape
+        cx, cy = w // 2, h // 2
+
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        result = self.hands.process(rgb)
+
+        mode = "IDLE"
+
+        if result.multi_hand_landmarks:
+            hand = result.multi_hand_landmarks[0]
+            lm = hand.landmark
+
+            tips = [8, 12, 16, 20]
+            pips = [6, 10, 14, 18]
+
+            fingers_up = sum(lm[t].y < lm[p].y for t, p in zip(tips, pips))
+            thumb_up = lm[4].y < lm[3].y
+
+            index_x = lm[8].x * w
+            index_y = lm[8].y * h
+            middle_y = lm[12].y * h
+
+            # -------- ARM CONTROL --------
+            if fingers_up == 1:
+                mode = "BASE"
+                raw = self.map_x(index_x, cx, 180)
+                self.base = self.update_joint(raw, self.hist_base)
+
+            elif fingers_up == 2:
+                mode = "SHOULDER"
+                raw = self.map_y(index_y, cy, 90)
+                self.shoulder = self.update_joint(raw, self.hist_shoulder)
+
+            elif fingers_up == 3:
+                mode = "ELBOW"
+                raw = self.map_y(middle_y, cy, 90)
+                self.elbow = self.update_joint(raw, self.hist_elbow)
+
+            elif fingers_up == 4:
+                mode = "WRIST"
+                raw = self.map_x(index_x, cx, 90)
+                self.wrist = self.update_joint(raw, self.hist_wrist)
+
+            elif fingers_up == 5:
+                mode = "HOME + SUCTION OFF"
+                self.base = self.shoulder = self.elbow = self.wrist = 0.0
+                self.suction = 0.0
+
+            # -------- SUCTION CONTROL --------
+            if thumb_up and fingers_up == 0:
+                mode = "SUCTION ON"
+                self.suction = 1.0
+
+            mp_drawing.draw_landmarks(frame, hand, mp_hands.HAND_CONNECTIONS)
+
+        # -------- PUBLISH --------
+        msg = Float32MultiArray()
+        msg.data = [
+            self.base,
+            self.shoulder,
+            self.elbow,
+            self.wrist,
+            self.suction
+        ]
+        self.publisher_.publish(msg)
+
+        cv2.putText(frame, f"Mode: {mode}", (20, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+
+        cv2.imshow("Gesture Control (Low Accuracy / Very Slow)", frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            rclpy.shutdown()
+
+    # =====================================================
+    def update_joint(self, raw_angle, history):
+        # Apply speed scaling
+        scaled = raw_angle * self.SPEED_SCALE
+
+        # Dead zone (reduce accuracy)
+        if abs(scaled) < self.DEAD_ZONE:
+            scaled = 0.0
+
+        # Smooth strongly
+        return self.smooth(scaled, history)
+
+    def map_x(self, x, center, max_angle):
+        delta = x - center
+        return clamp((delta / center) * (max_angle / 2),
+                     -max_angle / 2, max_angle / 2)
+
+    def map_y(self, y, center, max_angle):
+        delta = center - y
+        return clamp((delta / center) * max_angle,
+                     -max_angle, max_angle)
+
+    def smooth(self, new, history, alpha=0.05):
+        if not history:
+            history.append(new)
+        else:
+            history.append(alpha * new + (1 - alpha) * history[-1])
+        return history[-1]
+
+    def on_shutdown(self):
+        self.cap.release()
+        cv2.destroyAllWindows()
 
 
-        <xacro:if value="${DOF_property == 4}">
-
-        <xacro:dobot_armlink link_name="${prefix}_link_4" link_mesh="magicianLink4" base_origin_xyz="${joint_4_base_origin_xyz}" base_origin_rpy="${joint_4_base_origin_rpy}" />
-        <xacro:dobot_armjoint_mimic joint_name="${prefix}_joint_mimic_2" type="${joint_4_type}" parent="${prefix}_link_virtual" child="${prefix}_link_4" joint_axis_xyz="${joint_4_axis_xyz}" joint_origin_xyz="0 0 0" joint_origin_rpy="${joint_4_origin_rpy}" joint_lower_limit="${joint_4_lower_limit}" joint_upper_limit="${joint_4_upper_limit}" ref_joint="${prefix}_joint_3"/>
-
-        <xacro:if value="$(arg use_camera)">
-        <xacro:dobot_armlink link_name="${prefix}_link_realsense" link_mesh="camera"  base_origin_xyz="${-1*(link_2_length*sin(joint_2_offset)+link_3_length*cos(joint_2_offset+joint_3_offset)+link_4_length) + 0.23517+0.0019 + 0.115} 0 ${link_2_length-1*(link_2_length*cos(joint_2_offset)+link_3_length*sin(joint_2_offset+joint_3_offset)) + 0.0497517 - 0.003 + 0.0055}" base_origin_rpy="${joint_5_base_origin_rpy}"  />
-        <xacro:dobot_fixed_joint joint_name="${prefix}_joint_realsense" parent="${prefix}_link_4" child="${prefix}_link_realsense"  joint_origin_xyz="0 0 0 " joint_origin_rpy="${joint_5_origin_rpy}"/>
-        <xacro:dobot_fakelink link_name="camera_lens" base_origin_xyz="${joint_4_base_origin_xyz}" base_origin_rpy="${joint_4_base_origin_rpy}" />
-        <xacro:dobot_fixed_joint joint_name="camera_lens_joint" parent="${prefix}_link_realsense" child="camera_lens"  joint_origin_xyz="0.115 0.0175 -0.005 " joint_origin_rpy="${J_PI} 0 ${-0.5*J_PI} "/>
-        <xacro:dobot_fakelink link_name="FOV_marker_origin" base_origin_xyz="${joint_4_base_origin_xyz}" base_origin_rpy="${joint_4_base_origin_rpy}" />
-        <xacro:dobot_fixed_joint joint_name="FOV_marker_origin_joint" parent="${prefix}_link_realsense" child="FOV_marker_origin"  joint_origin_xyz="0.115 0.0175 -0.005 " joint_origin_rpy="0 0 ${0.5*J_PI}"/>
-        </xacro:if>
-
-        <xacro:if value="${tool_property == 'suction_cup'}">
-        <xacro:dobot_armlink link_name="${prefix}_link_suction_cup" link_mesh="suction_cup"  base_origin_xyz="${-1*(link_2_length*sin(joint_2_offset)+link_3_length*cos(joint_2_offset+joint_3_offset)+link_4_length) + 0.23517+0.0019} 0 ${link_2_length-1*(link_2_length*cos(joint_2_offset)+link_3_length*sin(joint_2_offset+joint_3_offset)) + 0.0497517 - 0.003}" base_origin_rpy="${joint_5_base_origin_rpy}"  />
-        <xacro:dobot_armjoint joint_name="${prefix}_joint_4" type="${joint_5_type}" parent="${prefix}_link_4" child="${prefix}_link_suction_cup" joint_axis_xyz="${joint_5_axis_xyz}" joint_origin_xyz="0.06 0 0" joint_origin_rpy="${joint_5_origin_rpy}" joint_lower_limit="${joint_5_lower_limit}" joint_upper_limit="${joint_5_upper_limit}"/>
-        </xacro:if>
-
-        <xacro:if value="${tool_property == 'gripper'}">
-        <xacro:dobot_armlink link_name="${prefix}_link_gripper_core" link_mesh="gripper_core"  base_origin_xyz="${-1*(link_2_length*sin(joint_2_offset)+link_3_length*cos(joint_2_offset+joint_3_offset)+link_4_length) + 0.23517+0.0019} 0 ${link_2_length-1*(link_2_length*cos(joint_2_offset)+link_3_length*sin(joint_2_offset+joint_3_offset)) + 0.0497517 - 0.003 - 0.016}" base_origin_rpy="${joint_5_base_origin_rpy}"  />
-        <xacro:dobot_armjoint joint_name="${prefix}_joint_4" type="${joint_5_type}" parent="${prefix}_link_4" child="${prefix}_link_gripper_core" joint_axis_xyz="${joint_5_axis_xyz}" joint_origin_xyz="0.06 0 0" joint_origin_rpy="${joint_5_origin_rpy}" joint_lower_limit="${joint_5_lower_limit}" joint_upper_limit="${joint_5_upper_limit}"/>
-
-        <xacro:dobot_armlink link_name="${prefix}_link_gripper_jaw_left" link_mesh="jaw_left"  base_origin_xyz="${-1*(link_2_length*sin(joint_2_offset)+link_3_length*cos(joint_2_offset+joint_3_offset)+link_4_length) + 0.23517+0.0019} -0.0009 ${link_2_length-1*(link_2_length*cos(joint_2_offset)+link_3_length*sin(joint_2_offset+joint_3_offset)) + 0.0497517 - 0.003 - 0.016 }" base_origin_rpy="${joint_5_base_origin_rpy}"  />
-        <xacro:dobot_armjoint joint_name="${prefix}_joint_prismatic_l" type="prismatic" parent="${prefix}_link_gripper_core" child="${prefix}_link_gripper_jaw_left" joint_axis_xyz="0 1 0 " joint_origin_xyz="0 0 0" joint_origin_rpy="${joint_5_origin_rpy}" joint_lower_limit="0" joint_upper_limit="0.0135"/>
-
-        <xacro:dobot_armlink link_name="${prefix}_link_gripper_jaw_right" link_mesh="jaw_right"  base_origin_xyz="${-1*(link_2_length*sin(joint_2_offset)+link_3_length*cos(joint_2_offset+joint_3_offset)+link_4_length) + 0.23517+0.0019} 0.0009 ${link_2_length-1*(link_2_length*cos(joint_2_offset)+link_3_length*sin(joint_2_offset+joint_3_offset)) + 0.0497517 - 0.003 - 0.016 }" base_origin_rpy="${joint_5_base_origin_rpy}"  />
-        <xacro:dobot_armjoint_mimic joint_name="${prefix}_joint_prismatic_r" type="prismatic" parent="${prefix}_link_gripper_core" child="${prefix}_link_gripper_jaw_right" joint_axis_xyz="0 1 0" joint_origin_xyz="0 0 0" joint_origin_rpy="${joint_5_origin_rpy}" joint_lower_limit="0" joint_upper_limit="-0.0135" ref_joint="${prefix}_joint_prismatic_l"/>
-        </xacro:if>
+def clamp(val, mn, mx):
+    return max(mn, min(mx, val))
 
 
-        <xacro:if value="${tool_property == 'extended_gripper'}">
-        <xacro:dobot_armlink link_name="${prefix}_link_gripper_core" link_mesh="gripper_core"  base_origin_xyz="${-1*(link_2_length*sin(joint_2_offset)+link_3_length*cos(joint_2_offset+joint_3_offset)+link_4_length) + 0.23517+0.0019} 0 ${link_2_length-1*(link_2_length*cos(joint_2_offset)+link_3_length*sin(joint_2_offset+joint_3_offset)) + 0.0497517 - 0.003 - 0.016 }" base_origin_rpy="${joint_5_base_origin_rpy}"  />
-        <xacro:dobot_armjoint joint_name="${prefix}_joint_4" type="${joint_5_type}" parent="${prefix}_link_4" child="${prefix}_link_gripper_core" joint_axis_xyz="${joint_5_axis_xyz}" joint_origin_xyz="0.06 0 0" joint_origin_rpy="${joint_5_origin_rpy}" joint_lower_limit="${joint_5_lower_limit}" joint_upper_limit="${joint_5_upper_limit}"/>
-
-        <xacro:dobot_armlink link_name="${prefix}_link_gripper_jaw_left" link_mesh="jaw_left_extended"  base_origin_xyz="${-1*(link_2_length*sin(joint_2_offset)+link_3_length*cos(joint_2_offset+joint_3_offset)+link_4_length) + 0.23517+0.0019} 0.001 ${link_2_length-1*(link_2_length*cos(joint_2_offset)+link_3_length*sin(joint_2_offset+joint_3_offset)) + 0.0497517 - 0.003 - 0.016 }" base_origin_rpy="${joint_5_base_origin_rpy}"  />
-        <xacro:dobot_armjoint joint_name="${prefix}_joint_prismatic_l" type="prismatic" parent="${prefix}_link_gripper_core" child="${prefix}_link_gripper_jaw_left" joint_axis_xyz="0 1 0 " joint_origin_xyz="0 0 0" joint_origin_rpy="${joint_5_origin_rpy}" joint_lower_limit="0" joint_upper_limit="0.0135"/>
-
-        <xacro:dobot_armlink link_name="${prefix}_link_gripper_jaw_right" link_mesh="jaw_right_extended"  base_origin_xyz="${-1*(link_2_length*sin(joint_2_offset)+link_3_length*cos(joint_2_offset+joint_3_offset)+link_4_length) + 0.23517+0.0019} -0.001 ${link_2_length-1*(link_2_length*cos(joint_2_offset)+link_3_length*sin(joint_2_offset+joint_3_offset)) + 0.0497517 - 0.003 - 0.016 }" base_origin_rpy="${joint_5_base_origin_rpy}"  />
-        <xacro:dobot_armjoint_mimic joint_name="${prefix}_joint_prismatic_r" type="prismatic" parent="${prefix}_link_gripper_core" child="${prefix}_link_gripper_jaw_right" joint_axis_xyz="0 1 0" joint_origin_xyz="0 0 0" joint_origin_rpy="${joint_5_origin_rpy}" joint_lower_limit="0" joint_upper_limit="-0.0135" ref_joint="${prefix}_joint_prismatic_l"/>
-        </xacro:if>
-
-        </xacro:if>
+def main(args=None):
+    rclpy.init(args=args)
+    node = FingerAnglePublisher()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.on_shutdown()
+        rclpy.shutdown()
 
 
-
-    </xacro:macro>
-
-    
-
-</root>
+if __name__ == '__main__':
+    main()
